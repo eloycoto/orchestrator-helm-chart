@@ -99,8 +99,11 @@ argocd:
 
 
 rhsso:
-  enabled: true # whether to install Red Hat SSO operator
-  log_level: INFO # log level for sso-idp microservices
+  enabled: true # Whether to create the Red Hat SSO login information
+  deploy: true # If we need to deploy the RedHat SSO operator (For development pourposes)
+  metadataURL: "" # If it's defined will use this, if not will build based on the deploy details.
+  baseURL: "" # If it's defined will use this, if not will build based on the deploy details.
+  log_level: INFO # Log level for sso-idp microservices
   namespace: orchestrator-sso # namespace where the operator should be deployed
   instances: 1 # Number of sso-instances
   startingCSV: rhsso-operator.7.6.9-opr-001
