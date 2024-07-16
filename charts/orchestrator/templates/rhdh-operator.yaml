@@ -1,5 +1,22 @@
-{{- define "backstage-manifest" }}
+{{- $cert := false }}
+{{- $ingress_secret := (lookup "v1" "Secret" "openshift-ingress" "router-certs-default") }}
+{{- if $ingress_secret }}
+{{- $cert := get $ingress_secret.data "tls.crt" }}
+---
+# This secret is the Openshift router public certificate. Backstage cannot
+#access the ingress secret from another namespaces, so we copy it to trust it.
+#It's mostly for developement pourposes and to avoid the
+#NODE_TLS_REJECT_UNAUTHORIZED=0 env variable.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rhdh-ingress-cert
+  namespace: {{ .Values.rhdhOperator.subscription.namespace }}
+data:
+    cert: {{ $cert }}
+{{- end }}
 
+{{- define "backstage-manifest" }}
 ---
 apiVersion: rhdh.redhat.com/v1alpha1
 kind: Backstage
@@ -17,8 +34,15 @@ spec:
         - name: app-config-rhdh-catalog
     dynamicPluginsConfigMapName: dynamic-plugins-rhdh
     extraEnvs:
+      envs:
+        - name: NODE_EXTRA_CA_CERTS
+          value: /opt/app-root/src/cert
       secrets:
         - name: {{ .Values.rhdhOperator.secretRef.name }}
+    extraFiles:
+      secrets:
+        - name: rhdh-ingress-cert
+          key: cert
     replicas: 1
 {{- end }}
 
