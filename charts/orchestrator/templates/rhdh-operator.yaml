@@ -68,7 +68,7 @@ spec:
 }}
 
 {{- $OIDC_BASE_URL := default (printf "https://keycloak-%s.%s/auth" $.Values.rhsso.namespace (include "cluster.domain" .)) $.Values.rhsso.baseURL }}
-{{- $OIDC_METADATA_URL := default (printf "%s/realms/%s/.well-known/openid-configuration " $OIDC_BASE_URL $.Values.rhsso.name) $.Values.rhsso.baseURL }}
+{{- $OIDC_METADATA_URL := default (printf "%s/realms/%s/.well-known/openid-configuration " $OIDC_BASE_URL .Values.rhsso.realm.name) $.Values.rhsso.baseURL }}
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
@@ -339,6 +339,11 @@ data:
                  cache:
                    ttl:
                      days: 1
+      {{- if .Values.rhsso.enabled }}
+      - package: ./dynamic-plugins/dist/janus-idp-backstage-plugin-keycloak-backend-dynamic
+        disabled: false
+        pluginConfig: {}
+      {{ end }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -370,6 +375,8 @@ data:
   app-config-auth.oidc.yaml: |
     signInPage: oidc
     auth:
+      session:
+        secret: {{ randAlphaNum 32 }}
       providers:
         oidc:
           development:
@@ -385,7 +392,7 @@ data:
         keycloakOrg:
           default:
             baseUrl: {{ $OIDC_BASE_URL }}
-            loginRealm: "basic"
+            loginRealm: {{ $.Values.rhsso.realm.name }}
             realm: {{ $.Values.rhsso.realm.name }}
             clientId: {{ $.Values.rhsso.client.username }}
             clientSecret: {{ $.Values.rhsso.client.password }}
